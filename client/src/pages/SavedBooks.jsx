@@ -10,9 +10,18 @@ import {
 import { getMe, deleteBook } from '../utils/API';
 import Auth from '../utils/auth';
 import { removeBookId } from '../utils/localStorage';
+import { useQuery, useMutation } from '@apollo/client';
+import { REMOVE_BOOK } from '../utils/mutations';
+import { GET_ME } from '../utils/queries';
 
 const SavedBooks = () => {
-  const [userData, setUserData] = useState({});
+  // Destructuring the useQuery hook to get loading and data from the QUERY_ME query
+  const {loading, data} = useQuery(GET_ME);
+
+  // Destructuring the useMutation hook to get the removeBook function and an error object
+  const [removeBook, {error}] = useMutation(REMOVE_BOOK);
+
+  const userData = data?.me || {};
 
   // use this to determine if `useEffect()` hook needs to run again
   const userDataLength = Object.keys(userData).length;
@@ -28,7 +37,7 @@ const SavedBooks = () => {
 
         const response = await getMe(token);
 
-        if (!response.ok) {
+        if (error) {
           throw new Error('something went wrong!');
         }
 
@@ -51,9 +60,11 @@ const SavedBooks = () => {
     }
 
     try {
-      const response = await deleteBook(bookId, token);
+      await removeBook({
+        variables: {bookId: bookId}
+      });
 
-      if (!response.ok) {
+      if (error) {
         throw new Error('something went wrong!');
       }
 
@@ -67,7 +78,7 @@ const SavedBooks = () => {
   };
 
   // if data isn't here yet, say so
-  if (!userDataLength) {
+  if (loading) {
     return <h2>LOADING...</h2>;
   }
 
